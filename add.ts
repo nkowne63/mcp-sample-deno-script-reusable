@@ -1,31 +1,31 @@
 #!/usr/bin/env -S deno run
-import { McpServer } from "npm:@modelcontextprotocol/sdk@1.13.2/server/mcp.js";
-import { StdioServerTransport } from "npm:@modelcontextprotocol/sdk@1.13.2/server/stdio.js";
-import { z } from "npm:zod@3.25.67";
-import { assertEquals } from "https://deno.land/std@0.65.0/testing/asserts.ts";
+import { FastMCP } from "npm:fastmcp";
+import { z } from "npm:zod";
+import { assertEquals } from "jsr:@std/assert";
 
 export const add = (a: number, b: number) => a + b
 
 if (import.meta.main) {
-  const server = new McpServer({
+  const server = new FastMCP({
     name: "demo-server",
     version: "1.0.0"
   });
 
-  server.registerTool("add",
-    {
-      title: "Addition Tool",
-      description: "Add two numbers",
-      inputSchema: { a: z.number(), b: z.number() }
+  server.addTool({
+    name: "add",
+    description: "Add two numbers",
+    parameters: z.object({
+      a: z.number(),
+      b: z.number(),
+    }),
+    execute: async (args) => {
+      return await String(args.a + args.b);
     },
-    ({ a, b }) => ({
-      content: [{ type: "text", text: String(add(a, b)) }]
-    })
-  );
+  });
 
-  const transport = new StdioServerTransport();
-  console.log("server starting...")
-  await server.connect(transport);
+  server.start({
+    transportType: "stdio"
+  })
 }
 
 Deno.test({
